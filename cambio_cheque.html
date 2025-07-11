@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambio de Cheques- Blessed D MultiService</title>
+   <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="company-banner">
+            <h1>Blessed D MultiService</h1>
+        </div>
+
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="control_horas.html">Control de Horas</a>
+            <a href="gestion_inventario.html">Gestión de Inventario</a>
+            <a href="historial_ventas.html">Historial de Ventas</a>
+            <a href="cambio_cheque.html">Cambio de Cheques</a>
+        </div>
+
+        <hr>
+        <div class="section" id="cambio-cheque-page">
+            <h2>Cambio de Cheques</h2>
+            <div class="form-group">
+                <label for="checkAmount">Monto del Cheque ($):</label>
+                <input type="number" id="checkAmount" min="0.01" step="0.01" placeholder="Ej: 100.00" required>
+            </div>
+            <div class="form-group">
+                <label for="currentFlatFee">Tarifa Fija Actual ($):</label>
+                <input type="number" id="currentFlatFee" value="1.00" step="0.01" disabled>
+            </div>
+            <button id="calculateCheckBtn" class="btn primary">Registrar Comisión</button>
+            <button id="modifyFlatFeeBtn" class="btn info">Modificar Tarifa Fija</button>
+            <button id="resetCommissionsBtn" class="btn danger">Resetear Comisiones Globales</button>
+            <div class="result-display" style="margin-top: 20px;">
+                <p>Total de Comisiones Acumuladas (Global): $<span id="totalCommissions">0.00</span></p>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="section" id="monthly-commissions-page">
+            <h2>Comisiones Acumuladas por Mes</h2>
+            <p>Las comisiones se registran automáticamente en el mes actual al presionar "Registrar Comisión".</p>
+            <div class="result-display" style="margin-top: 20px;">
+                <p>Comisiones del Mes Actual (<span id="currentMonthCommissionName"></span>): $<span id="currentMonthCommissions">0.00</span></p>
+            </div>
+            <button id="resetCurrentMonthCommissionsBtn" class="btn danger">Resetear Comisiones del Mes Actual</button>
+
+            <h3>Historial de Comisiones por Mes</h3>
+            <div class="month-selector">
+                <label for="selectedCommissionMonth">Seleccionar Mes:</label>
+                <select id="selectedCommissionMonth"></select>
+            </div>
+            <div class="result-display" style="margin-top: 10px;">
+                <p>Comisiones del Mes Seleccionado: $<span id="displaySelectedMonthCommissions">0.00</span></p>
+            </div>
+            <button id="clearAllMonthlyCommissionsBtn" class="btn danger">Borrar Todas las Comisiones Mensuales</button>
+        </div>
+    </div>
+
+    <button id="backToTopBtn" title="Volver al Inicio">↑ Inicio</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Variables para Datos (usando Local Storage para simular persistencia) ---
+            let totalCommissions = parseFloat(localStorage.getItem('totalCommissions')) || 0;
+            let flatFee = parseFloat(localStorage.getItem('flatFee')) || 1.00;
+            // Variable para comisiones mensuales
+            let monthlyCommissionsData = JSON.parse(localStorage.getItem('monthlyCommissionsData')) || {};
+
+            // --- Funciones de Utilidad ---
+            function saveToLocalStorage() {
+                localStorage.setItem('totalCommissions', totalCommissions.toFixed(2));
+                localStorage.setItem('flatFee', flatFee.toFixed(2));
+                // Guardar las comisiones mensuales
+                localStorage.setItem('monthlyCommissionsData', JSON.stringify(monthlyCommissionsData));
+            }
+
+            const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+            function getCurrentMonthKey() {
+                const now = new Date();
+                // Formato: YYYY-MM (Ej: 2025-07)
+                return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+            }
+
+            // --- Cambio de Cheque ---
+            const checkAmountInput = document.getElementById('checkAmount');
+            const currentFlatFeeInput = document.getElementById('currentFlatFee');
+            const calculateCheckBtn = document.getElementById('calculateCheckBtn');
+            const modifyFlatFeeBtn = document.getElementById('modifyFlatFeeBtn');
+            const resetCommissionsBtn = document.getElementById('resetCommissionsBtn'); // Este es para el total global
+            const totalCommissionsSpan = document.getElementById('totalCommissions');
+
+            function updateGlobalCommissionsDisplay() {
+                if (!totalCommissionsSpan || !currentFlatFeeInput) return;
+                totalCommissionsSpan.textContent = totalCommissions.toFixed(2);
+                currentFlatFeeInput.value = flatFee.toFixed(2);
+            }
+
+            if (calculateCheckBtn) {
+                calculateCheckBtn.onclick = () => {
+                    const checkAmount = parseFloat(checkAmountInput.value);
+
+                    if (isNaN(checkAmount) || checkAmount <= 0) {
+                        alert('Por favor, ingresa un monto de cheque válido y mayor que 0.');
+                        return;
+                    }
+
+                    // Afecta la comisión global
+                    totalCommissions += flatFee;
+                    updateGlobalCommissionsDisplay();
+
+                    // Afecta la comisión mensual
+                    const currentMonthKey = getCurrentMonthKey();
+                    monthlyCommissionsData[currentMonthKey] = (monthlyCommissionsData[currentMonthKey] || 0) + flatFee;
+                    updateMonthlyCommissionsDisplay(); // Actualiza la vista de comisiones mensuales
+
+                    saveToLocalStorage();
+                    alert(`Se ha registrado $${flatFee.toFixed(2)} al total de comisiones y a las comisiones del mes actual.`);
+                    checkAmountInput.value = '';
+                };
+
+                modifyFlatFeeBtn.onclick = () => {
+                    const newFeeStr = prompt(`Ingresa la nueva tarifa fija (actual: $${flatFee.toFixed(2)}):`);
+                    if (newFeeStr === null || newFeeStr.trim() === '') {
+                        return;
+                    }
+
+                    const newFee = parseFloat(newFeeStr);
+                    if (isNaN(newFee) || newFee < 0) {
+                        alert('Por favor, ingresa un valor numérico válido y no negativo para la tarifa.');
+                        return;
+                    }
+
+                    flatFee = newFee;
+                    updateGlobalCommissionsDisplay();
+                    saveToLocalStorage();
+                    alert(`La tarifa fija ha sido actualizada a $${flatFee.toFixed(2)}.`);
+                };
+
+                resetCommissionsBtn.onclick = () => { // Reset global commissions
+                    if (confirm('¿Estás seguro de que quieres resetear el total de comisiones GLOBALES a CERO? Esta acción no se puede deshacer.')) {
+                        totalCommissions = 0;
+                        updateGlobalCommissionsDisplay();
+                        saveToLocalStorage();
+                        alert('El total de comisiones globales ha sido reseteado a $0.00.');
+                    }
+                };
+                updateGlobalCommissionsDisplay();
+            }
+
+            // --- Comisiones Mensuales ---
+            const currentMonthCommissionNameSpan = document.getElementById('currentMonthCommissionName');
+            const currentMonthCommissionsSpan = document.getElementById('currentMonthCommissions');
+            const resetCurrentMonthCommissionsBtn = document.getElementById('resetCurrentMonthCommissionsBtn');
+            const selectedCommissionMonthSelect = document.getElementById('selectedCommissionMonth');
+            const displaySelectedMonthCommissionsSpan = document.getElementById('displaySelectedMonthCommissions');
+            const clearAllMonthlyCommissionsBtn = document.getElementById('clearAllMonthlyCommissionsBtn');
+
+            function updateMonthlyCommissionsDisplay() {
+                const currentMonthKey = getCurrentMonthKey();
+                const currentMonthIndex = new Date().getMonth();
+                currentMonthCommissionNameSpan.textContent = monthNames[currentMonthIndex];
+                currentMonthCommissionsSpan.textContent = (monthlyCommissionsData[currentMonthKey] || 0).toFixed(2);
+
+                // Populate the month selection dropdown for commissions
+                selectedCommissionMonthSelect.innerHTML = ''; // Clear previous options
+                const sortedCommissionMonthKeys = Object.keys(monthlyCommissionsData).sort().reverse(); // Sort descending for latest month first
+
+                if (sortedCommissionMonthKeys.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No hay comisiones registradas';
+                    selectedCommissionMonthSelect.appendChild(option);
+                    displaySelectedMonthCommissionsSpan.textContent = '0.00';
+                    return;
+                }
+
+                sortedCommissionMonthKeys.forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    const [year, monthNum] = key.split('-');
+                    option.textContent = `${monthNames[parseInt(monthNum) - 1]} ${year}`;
+                    selectedCommissionMonthSelect.appendChild(option);
+                });
+
+                // Set the default selected month to the current one or the latest available
+                if (sortedCommissionMonthKeys.includes(currentMonthKey)) {
+                    selectedCommissionMonthSelect.value = currentMonthKey;
+                } else {
+                    selectedCommissionMonthSelect.value = sortedCommissionMonthKeys[0]; // Select the latest available month
+                }
+                updateSelectedMonthCommissionsDisplay();
+            }
+
+            function updateSelectedMonthCommissionsDisplay() {
+                const selectedKey = selectedCommissionMonthSelect.value;
+                displaySelectedMonthCommissionsSpan.textContent = (monthlyCommissionsData[selectedKey] || 0).toFixed(2);
+            }
+
+            if (resetCurrentMonthCommissionsBtn) {
+                resetCurrentMonthCommissionsBtn.onclick = () => {
+                    const currentMonthKey = getCurrentMonthKey();
+                    if (confirm(`¿Estás seguro de que quieres resetear las comisiones de ${monthNames[new Date().getMonth()]} a CERO? Esta acción no se puede deshacer.`)) {
+                        monthlyCommissionsData[currentMonthKey] = 0;
+                        updateMonthlyCommissionsDisplay();
+                        saveToLocalStorage();
+                        alert(`Las comisiones de ${monthNames[new Date().getMonth()]} han sido reseteadas a $0.00.`);
+                    }
+                };
+
+                selectedCommissionMonthSelect.onchange = updateSelectedMonthCommissionsDisplay;
+
+                clearAllMonthlyCommissionsBtn.onclick = () => {
+                    if (confirm('¿Estás seguro de que quieres borrar TODAS las comisiones mensuales registradas? Esta acción no se puede deshacer.')) {
+                        monthlyCommissionsData = {};
+                        updateMonthlyCommissionsDisplay();
+                        saveToLocalStorage();
+                        alert('Todas las comisiones mensuales han sido borradas.');
+                    }
+                };
+                updateMonthlyCommissionsDisplay(); // Initialize display on load
+            }
+
+            // --- Funcionalidad del botón Volver al Inicio ---
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.onscroll = function() {
+                if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                    backToTopBtn.style.display = "block";
+                } else {
+                    backToTopBtn.style.display = "none";
+                }
+            };
+            backToTopBtn.addEventListener('click', () => {
+                document.body.scrollIntoView({ behavior: 'smooth' });
+                document.documentElement.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

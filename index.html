@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio - Blessed D MultiService</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="company-banner">
+            <h1>Blessed D MultiService</h1>
+        </div>
+
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="control_horas.html">Control de Horas</a>
+            <a href="gestion_inventario.html">Gestión de Inventario</a>
+            <a href="historial_ventas.html">Historial de Ventas</a>
+            <a href="cambio_cheque.html">Cambio de Cheques</a>
+        </div>
+
+        <hr>
+
+        <div class="section login-section" id="loginSection">
+            <button id="loginBtn" class="btn primary">Iniciar Sesión</button>
+            <div id="welcomeMessage" class="result-display" style="margin-top: 15px; display: none; color: #007bff; font-weight: bold;">
+                ¡Bienvenidos!
+            </div>
+        </div>
+
+        <div class="section" id="home-page-content" style="display: none;">
+            <h2>Bienvenido a Blessed D MultiService</h2>
+            <p>Aquí puedes gestionar tus operaciones diarias de manera eficiente.</p>
+            </div>
+
+        <hr>
+
+        <div class="section logout-section">
+            <button id="logoutBtn" class="btn danger" style="display: none;">Cerrar Sesión</button>
+            <div id="logoutMessage" class="result-display" style="margin-top: 15px; display: none; color: green; font-weight: bold;">
+                Gracias por usar nuestro servicio. ¡Que tengas un buen día!
+            </div>
+        </div>
+
+    </div>
+
+    <button id="backToTopBtn" title="Volver al Inicio">↑ Inicio</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Elementos de la sesión ---
+            const loginBtn = document.getElementById('loginBtn');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const logoutMessage = document.getElementById('logoutMessage');
+            const loginSection = document.getElementById('loginSection');
+            const homePageContent = document.getElementById('home-page-content');
+
+            // --- Lógica al cargar la página ---
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            if (isLoggedIn) {
+                showLoggedInState();
+            } else {
+                showLoggedOutState();
+            }
+
+            function showLoggedInState() {
+                loginSection.style.display = 'none';
+                welcomeMessage.style.display = 'block';
+                homePageContent.style.display = 'block';
+                logoutBtn.style.display = 'block';
+                logoutMessage.style.display = 'none';
+            }
+
+            function showLoggedOutState() {
+                loginSection.style.display = 'block';
+                welcomeMessage.style.display = 'none';
+                homePageContent.style.display = 'none';
+                logoutBtn.style.display = 'none';
+                logoutMessage.style.display = 'none';
+            }
+
+            // --- Event Listener para Iniciar Sesión ---
+            if (loginBtn) {
+                loginBtn.addEventListener('click', () => {
+                    localStorage.setItem('isLoggedIn', 'true'); // Simula el inicio de sesión
+                    showLoggedInState();
+                    alert('¡Sesión iniciada! Bienvenidos.'); // Alerta opcional
+                });
+            }
+
+            // --- Event Listener para Cerrar Sesión ---
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    // Simular el cierre de sesión y actualizar la UI
+                    localStorage.removeItem('isLoggedIn');
+                    showLoggedOutState();
+                    logoutMessage.style.display = 'block';
+
+                    setTimeout(() => {
+                        logoutMessage.style.display = 'none';
+                    }, 3000);
+                    alert('Gracias por usar nuestro servicio. ¡Que tengas un buen día!');
+                });
+            }
+
+            // --- Funcionalidad del botón Volver al Inicio ---
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            if (backToTopBtn) {
+                window.onscroll = function() {
+                    if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                        backToTopBtn.style.display = "block";
+                    } else {
+                        backToTopBtn.style.display = "none";
+                    }
+                };
+                backToTopBtn.addEventListener('click', () => {
+                    document.body.scrollIntoView({ behavior: 'smooth' });
+                    document.documentElement.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

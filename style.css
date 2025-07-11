@@ -1,0 +1,348 @@
+  <style>
+        /* --- style.css start (Copia del CSS base) --- */
+        body {
+            font-family: 'Arial',Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            font-weight: bold; 
+            display: flex;
+            justify-content: center;
+            align-items: center;  
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+p {
+  text-align: center;
+}
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+            box-sizing: border-box;
+        }
+
+        /* Estilos para el banner de la empresa */
+        .company-banner {
+            background-color: #8A2BE2; /* Morado */
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            margin: -30px -30px 30px -30px; /* Ajusta para que se extienda a los bordes del contenedor */
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .company-banner h1 {
+            color: white;
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #0056b3;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+
+        h2 {
+            color: #0056b3;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            font-size: 1.8em;
+        }
+
+        h3 {
+            color: #0056b3;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: #fcfcfc;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .btn:last-child {
+            margin-right: 0;
+        }
+
+        .btn.primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn.primary:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        .btn.secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn.secondary:hover:not(:disabled) {
+            background-color: #545b62;
+        }
+
+        .btn.danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn.danger:hover:not(:disabled) {
+            background-color: #bd2130;
+        }
+
+        .btn.success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn.success:hover:not(:disabled) {
+            background-color: #218838;
+        }
+
+        .btn.info {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn.info:hover:not(:disabled) {
+            background-color: #138496;
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #eee;
+            margin: 30px 0;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            min-width: 500px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .result-display {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #e9f7ef;
+            color: #28a745;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Estilos para los enlaces de navegación */
+        .nav-links {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px 0;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .nav-links a {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 0 15px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background-color: #d0d0d0;
+            color: #003a75;
+        }
+
+        /* Estilo para el botón de volver a inicio */
+        #backToTopBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, transform 0.2s;
+            display: none; /* Oculto por defecto, se muestra con JS */
+        }
+
+        #backToTopBtn:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .company-banner {
+                margin: -20px -20px 20px -20px;
+            }
+
+            .company-banner h1 {
+                font-size: 2em;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.5em;
+            }
+
+            .btn {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+
+            .nav-links {
+                padding: 10px 5px;
+            }
+
+            .nav-links a {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+/* style.css (ejemplo de estilos básicos si no los tienes) */
+.btn {
+    text-align: center;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+.btn.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn.info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn.danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.result-display {
+    background-color: #e9ecef;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.section {
+    text-align: center;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.logout-section {
+    text-align: center;
+    padding: 30px;
+}
+        /* --- style.css end --- */
+    </style>

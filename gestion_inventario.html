@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inventario - Blessed D MultiService</title>
+   <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="company-banner">
+            <h1>Blessed D MultiService</h1>
+        </div>
+
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="control_horas.html">Control de Horas</a>
+            <a href="gestion_inventario.html">Gestión de Inventario</a>
+            <a href="historial_ventas.html">Historial de Ventas</a>
+            <a href="cambio_cheque.html">Cambio de Cheques</a>
+        </div>
+
+        <hr>
+        <div class="section" id="gestion-inventario-page">
+            <h2>Gestión de Inventario (Saldo de Producto)</h2>
+
+            <div class="form-group">
+                <label for="itemName">Nombre del Artículo:</label>
+                <input type="text" id="itemName" placeholder="Ej: Laptop" required>
+            </div>
+            <div class="form-group">
+                <label for="itemQuantity">Cantidad:</label>
+                <input type="number" id="itemQuantity" min="1" value="1" required>
+            </div>
+            <div class="form-group">
+                <label for="itemPrice">Precio Unitario ($):</label>
+                <input type="number" id="itemPrice" min="0.01" step="0.01" value="0.01" required>
+            </div>
+            <button id="addItemBtn" class="btn primary">Agregar Artículo</button>
+
+            <div class="table-container">
+                <h3>Inventario Actual</h3>
+                <table id="inventoryTable">
+                    <thead>
+                        <tr>
+                            <th>Artículo</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+            <button id="downloadInventoryBtn" class="btn success">Descargar Inventario</button>
+        </div>
+    </div>
+
+    <button id="backToTopBtn" title="Volver al Inicio">↑ Inicio</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Variables para Datos (usando Local Storage para simular persistencia) ---
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || []; // Necesario para recordSale
+            let lastProductName = localStorage.getItem('lastProductName') || '';
+
+            // --- Funciones de Utilidad (para persistencia) ---
+            function saveToLocalStorage() {
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                localStorage.setItem('salesHistory', JSON.stringify(salesHistory));
+                localStorage.setItem('lastProductName', lastProductName);
+            }
+
+            function formatDate(date) {
+                return date.toLocaleDateString('es-ES');
+            }
+
+            // --- Gestión de Inventario ---
+            const itemNameInput = document.getElementById('itemName');
+            const itemQuantityInput = document.getElementById('itemQuantity');
+            const itemPriceInput = document.getElementById('itemPrice');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const inventoryTableBody = document.querySelector('#inventoryTable tbody');
+            const downloadInventoryBtn = document.getElementById('downloadInventoryBtn');
+
+            function renderInventory() {
+                if (!inventoryTableBody) return;
+                inventoryTableBody.innerHTML = '';
+                inventory.forEach((item, index) => {
+                    const row = inventoryTableBody.insertRow();
+                    row.insertCell().textContent = item.name;
+                    row.insertCell().textContent = item.quantity;
+                    row.insertCell().textContent = `$${item.price.toFixed(2)}`;
+                    const actionsCell = row.insertCell();
+
+                    const sellBtn = document.createElement('button');
+                    sellBtn.textContent = 'Vender';
+                    sellBtn.className = 'btn info btn-sm';
+                    sellBtn.onclick = () => recordSale(index);
+                    actionsCell.appendChild(sellBtn);
+
+                    const decreaseBtn = document.createElement('button');
+                    decreaseBtn.textContent = '-';
+                    decreaseBtn.className = 'btn secondary btn-sm';
+                    decreaseBtn.onclick = () => decreaseInventory(index);
+                    actionsCell.appendChild(decreaseBtn);
+
+                    const increaseBtn = document.createElement('button');
+                    increaseBtn.textContent = '+';
+                    increaseBtn.className = 'btn primary btn-sm';
+                    increaseBtn.onclick = () => increaseInventory(index);
+                    actionsCell.appendChild(increaseBtn);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Eliminar';
+                    deleteBtn.className = 'btn danger btn-sm';
+                    deleteBtn.onclick = () => deleteInventoryItem(index);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            }
+
+            function recordSale(index) {
+                const item = inventory[index];
+                const quantityToSellStr = prompt(`¿Cuántas unidades de "${item.name}" deseas vender? (Actual: ${item.quantity}, Precio unitario: $${item.price.toFixed(2)})`);
+                const quantityToSell = parseInt(quantityToSellStr, 10);
+
+                if (quantityToSellStr === null || isNaN(quantityToSell) || quantityToSell <= 0) {
+                    if (quantityToSellStr !== null) {
+                        alert('Por favor, ingresa una cantidad válida y mayor que 0.');
+                    }
+                    return;
+                }
+
+                if (quantityToSell > item.quantity) {
+                    alert(`No hay suficiente stock. Solo quedan ${item.quantity} unidades de "${item.name}".`);
+                    return;
+                }
+
+                item.quantity -= quantityToSell;
+                const totalSaleAmount = quantityToSell * item.price;
+
+                const newSale = {
+                    date: formatDate(new Date()),
+                    itemName: item.name,
+                    quantitySold: quantityToSell,
+                    unitPrice: item.price,
+                    totalSale: totalSaleAmount
+                };
+                salesHistory.push(newSale);
+
+                if (item.quantity === 0) {
+                    inventory.splice(index, 1);
+                }
+
+                renderInventory(); // Actualiza la tabla de inventario en esta página
+                saveToLocalStorage();
+                alert(`Se vendieron ${quantityToSell} unidades de "${item.name}" por un total de $${totalSaleAmount.toFixed(2)}.`);
+            }
+
+            function decreaseInventory(index) {
+                if (inventory[index].quantity > 0) {
+                    inventory[index].quantity--;
+                    renderInventory();
+                    saveToLocalStorage();
+                } else {
+                    alert('La cantidad no puede ser menor que 0. Considera eliminar el artículo si ya no queda stock.');
+                }
+            }
+
+            function increaseInventory(index) {
+                inventory[index].quantity++;
+                renderInventory();
+                saveToLocalStorage();
+            }
+
+            function deleteInventoryItem(index) {
+                if (confirm(`¿Estás seguro de que quieres eliminar "${inventory[index].name}" del inventario?`)) {
+                    inventory.splice(index, 1);
+                    renderInventory();
+                    saveToLocalStorage();
+                }
+            }
+
+            if (addItemBtn) {
+                if (lastProductName) {
+                    itemNameInput.value = lastProductName;
+                }
+
+                addItemBtn.onclick = () => {
+                    const itemName = itemNameInput.value.trim();
+                    const itemQuantity = parseInt(itemQuantityInput.value, 10);
+                    const itemPrice = parseFloat(itemPriceInput.value);
+
+                    if (itemName && itemQuantity > 0 && !isNaN(itemPrice) && itemPrice >= 0) {
+                        const existingItemIndex = inventory.findIndex(item => item.name.toLowerCase() === itemName.toLowerCase());
+
+                        if (existingItemIndex > -1) {
+                            inventory[existingItemIndex].quantity += itemQuantity;
+                            inventory[existingItemIndex].price = itemPrice;
+                            alert(`Cantidad de "${itemName}" actualizada a ${inventory[existingItemIndex].quantity}.`);
+                        } else {
+                            inventory.push({ name: itemName, quantity: itemQuantity, price: itemPrice });
+                            alert(`Artículo "${itemName}" agregado al inventario.`);
+                        }
+
+                        itemNameInput.value = '';
+                        itemQuantityInput.value = 1;
+                        itemPriceInput.value = 0.01;
+
+                        lastProductName = itemName;
+                        renderInventory();
+                        saveToLocalStorage();
+                    } else {
+                        alert('Por favor, ingresa un nombre de artículo, una cantidad válida (mayor que 0) y un precio válido (mayor o igual a 0).');
+                    }
+                };
+
+                downloadInventoryBtn.onclick = () => {
+                    if (inventory.length === 0) {
+                        alert('No hay artículos en el inventario para descargar.');
+                        return;
+                    }
+
+                    let csvContent = "data:text/csv;charset=utf-8,";
+                    csvContent += "Articulo,Cantidad,Precio Unitario\r\n";
+                    inventory.forEach(item => {
+                        csvContent += `${item.name},${item.quantity},${item.price.toFixed(2)}\r\n`;
+                    });
+
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', encodedUri);
+                    link.setAttribute('download', 'inventario.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+                renderInventory();
+            }
+
+            // --- Funcionalidad del botón Volver al Inicio ---
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.onscroll = function() {
+                if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                    backToTopBtn.style.display = "block";
+                } else {
+                    backToTopBtn.style.display = "none";
+                }
+            };
+            backToTopBtn.addEventListener('click', () => {
+                document.body.scrollIntoView({ behavior: 'smooth' });
+                document.documentElement.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

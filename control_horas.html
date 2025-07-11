@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Horas - Blessed D MultiService</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="company-banner">
+            <h1>Blessed D MultiService</h1>
+        </div>
+
+        <div class="nav-links">
+            <a href="index.html">Inicio</a> <a href="control_horas.html">Control de Horas</a>
+            <a href="gestion_inventario.html">Gestión de Inventario</a>
+            <a href="historial_ventas.html">Historial de Ventas</a>
+            <a href="cambio_cheque.html">Cambio de Cheques</a>
+        </div>
+
+        <hr>
+        <div class="section" id="control-horas-page">
+            <h2>Control de Horas</h2>
+            <div class="form-group">
+                <label for="firstName">Primer Nombre:</label>
+                <input type="text" id="firstName" placeholder="Nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="lastName">Apellido:</label>
+                <input type="text" id="lastName" placeholder="Apellido" required>
+            </div>
+            <button id="clockInBtn" class="btn primary">Clock In</button>
+            <button id="clockOutBtn" class="btn secondary" disabled>Clock Out</button>
+            <p>Estado: <span id="clockStatus">No registrado</span></p>
+            <div class="table-container">
+                <h3>Registros de Horas</h3>
+                <table id="timeLogTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre Completo</th>
+                            <th>Fecha</th>
+                            <th>Hora Entrada</th>
+                            <th>Hora Salida</th>
+                            <th>Duración</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+            <button id="downloadTimeLogBtn" class="btn success">Descargar Registros de Horas</button>
+            <button id="clearTimeLogBtn" class="btn danger" style="margin-left: 10px;">Borrar Registros</button>
+        </div>
+    </div>
+
+    <button id="backToTopBtn" title="Volver al Inicio">↑ Inicio</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Variables para Datos (usando Local Storage para simular persistencia) ---
+            let isClockedIn = JSON.parse(localStorage.getItem('isClockedIn')) || false;
+            let clockInTime = localStorage.getItem('clockInTime') || null;
+            let currentUserName = localStorage.getItem('currentUserName') || '';
+            let timeLogs = JSON.parse(localStorage.getItem('timeLogs')) || [];
+
+            // --- Funciones de Utilidad ---
+            function saveToLocalStorage() {
+                localStorage.setItem('isClockedIn', JSON.stringify(isClockedIn));
+                localStorage.setItem('clockInTime', clockInTime);
+                localStorage.setItem('currentUserName', currentUserName);
+                localStorage.setItem('timeLogs', JSON.stringify(timeLogs));
+            }
+
+            function formatTime(date) {
+                return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+
+            function formatDate(date) {
+                return date.toLocaleDateString('es-ES');
+            }
+
+            // --- Control de Horas ---
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            const clockInBtn = document.getElementById('clockInBtn');
+            const clockOutBtn = document.getElementById('clockOutBtn');
+            const clockStatus = document.getElementById('clockStatus');
+            const timeLogTableBody = document.querySelector('#timeLogTable tbody');
+            const downloadTimeLogBtn = document.getElementById('downloadTimeLogBtn');
+            const clearTimeLogBtn = document.getElementById('clearTimeLogBtn');
+
+            function updateClockStatus() {
+                if (isClockedIn) {
+                    clockStatus.textContent = `Registrado para ${currentUserName} desde: ${formatTime(new Date(clockInTime))}`;
+                    clockInBtn.disabled = true;
+                    clockOutBtn.disabled = false;
+                    firstNameInput.disabled = true;
+                    lastNameInput.disabled = true;
+                } else {
+                    clockStatus.textContent = 'No registrado';
+                    clockInBtn.disabled = false;
+                    clockOutBtn.disabled = true;
+                    firstNameInput.disabled = false;
+                    lastNameInput.disabled = false;
+                    firstNameInput.value = '';
+                    lastNameInput.value = '';
+                }
+            }
+
+            function renderTimeLogs() {
+                if (!timeLogTableBody) return;
+                timeLogTableBody.innerHTML = '';
+                timeLogs.forEach(log => {
+                    const row = timeLogTableBody.insertRow();
+                    row.insertCell().textContent = log.fullName;
+                    row.insertCell().textContent = log.date;
+                    row.insertCell().textContent = log.clockIn;
+                    row.insertCell().textContent = log.clockOut || 'N/A';
+                    row.insertCell().textContent = log.duration || 'N/A';
+                });
+            }
+
+            // Asegurarse de que los elementos existan antes de asignar eventos
+            if (clockInBtn) {
+                if (currentUserName) {
+                    const names = currentUserName.split(' ');
+                    firstNameInput.value = names[0] || '';
+                    lastNameInput.value = names.slice(1).join(' ') || '';
+                }
+
+                clockInBtn.onclick = () => {
+                    const firstName = firstNameInput.value.trim();
+                    const lastName = lastNameInput.value.trim();
+
+                    if (!firstName || !lastName) {
+                        alert('Por favor, ingresa tu nombre y apellido para registrar la entrada.');
+                        return;
+                    }
+
+                    if (!isClockedIn) {
+                        isClockedIn = true;
+                        clockInTime = new Date().toISOString();
+                        currentUserName = `${firstName} ${lastName}`;
+                        updateClockStatus();
+                        saveToLocalStorage();
+                        alert(`¡${currentUserName}, has registrado tu entrada!`);
+                    }
+                };
+
+                clockOutBtn.onclick = () => {
+                    if (isClockedIn && clockInTime) {
+                        isClockedIn = false;
+                        const now = new Date();
+                        const start = new Date(clockInTime);
+                        const durationMs = now.getTime() - start.getTime();
+                        const durationMinutes = Math.round(durationMs / (1000 * 60));
+
+                        const newLog = {
+                            fullName: currentUserName,
+                            date: formatDate(start),
+                            clockIn: formatTime(start),
+                            clockOut: formatTime(now),
+                            duration: `${durationMinutes} minutos`
+                        };
+                        timeLogs.push(newLog);
+                        clockInTime = null;
+                        currentUserName = '';
+                        updateClockStatus();
+                        renderTimeLogs();
+                        saveToLocalStorage();
+                        alert(`¡${newLog.fullName}, has registrado tu salida! Duración: ${newLog.duration}`);
+                    }
+                };
+
+                downloadTimeLogBtn.onclick = () => {
+                    if (timeLogs.length === 0) {
+                        alert('No hay registros de horas para descargar.');
+                        return;
+                    }
+
+                    let csvContent = "data:text/csv;charset=utf-8,";
+                    csvContent += "Nombre Completo,Fecha,Hora Entrada,Hora Salida,Duracion\r\n";
+                    timeLogs.forEach(log => {
+                        csvContent += `"${log.fullName}",${log.date},${log.clockIn},${log.clockOut || 'N/A'},${log.duration || 'N/A'}\r\n`;
+                    });
+
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', encodedUri);
+                    link.setAttribute('download', 'registros_horas.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+
+                clearTimeLogBtn.onclick = () => {
+                    if (confirm('¿Estás seguro de que quieres borrar todos los registros de horas? Esta acción no se puede deshacer.')) {
+                        timeLogs = [];
+                        renderTimeLogs();
+                        saveToLocalStorage();
+                        alert('Los registros de horas han sido borrados.');
+                    }
+                };
+
+                updateClockStatus();
+                renderTimeLogs();
+            }
+
+            // --- Funcionalidad del botón Volver al Inicio ---
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.onscroll = function() {
+                if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                    backToTopBtn.style.display = "block";
+                } else {
+                    backToTopBtn.style.display = "none";
+                }
+            };
+            backToTopBtn.addEventListener('click', () => {
+                document.body.scrollIntoView({ behavior: 'smooth' });
+                document.documentElement.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

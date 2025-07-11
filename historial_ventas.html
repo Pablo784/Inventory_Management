@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Ventas - Blessed D MultiService</title>
+   <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="company-banner">
+            <h1>Blessed D MultiService</h1>
+        </div>
+
+        <div class="nav-links">
+            <a href="index.html">Inicio</a>
+            <a href="control_horas.html">Control de Horas</a>
+            <a href="gestion_inventario.html">Gestión de Inventario</a>
+            <a href="historial_ventas.html">Historial de Ventas</a>
+            <a href="cambio_cheque.html">Cambio de Cheques</a>
+        </div>
+
+        <hr>
+        <div class="section" id="historial-ventas-page">
+            <h2>Historial de Ventas</h2>
+            <div class="table-container">
+                <h3>Transacciones de Ventas</h3>
+                <table id="salesLogTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Artículo</th>
+                            <th>Cantidad Vendida</th>
+                            <th>Precio Unitario</th>
+                            <th>Total Venta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+            <button id="downloadSalesLogBtn" class="btn success">Descargar Historial de Ventas</button>
+            <button id="downloadWeeklySalesBtn" class="btn success" style="margin-left: 10px;">Reporte Semanal</button>
+            <button id="downloadMonthlySalesBtn" class="btn success" style="margin-left: 10px;">Reporte Mensual</button>
+            <button id="clearSalesHistoryBtn" class="btn danger" style="margin-left: 10px;">Borrar Historial de Ventas</button>
+        </div>
+    </div>
+
+    <button id="backToTopBtn" title="Volver al Inicio">↑ Inicio</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Variables para Datos (usando Local Storage para simular persistencia) ---
+            let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
+
+            // --- Funciones de Utilidad ---
+            function saveToLocalStorage() {
+                localStorage.setItem('salesHistory', JSON.stringify(salesHistory));
+            }
+
+            function formatDate(date) {
+                return date.toLocaleDateString('es-ES');
+            }
+
+            function getMondayOfCurrentWeek(d) {
+                d = new Date(d);
+                const day = d.getDay();
+                const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                return new Date(d.setDate(diff));
+            }
+
+            // --- Historial de Ventas ---
+            const salesLogTableBody = document.querySelector('#salesLogTable tbody');
+            const downloadSalesLogBtn = document.getElementById('downloadSalesLogBtn');
+            const downloadWeeklySalesBtn = document.getElementById('downloadWeeklySalesBtn');
+            const downloadMonthlySalesBtn = document.getElementById('downloadMonthlySalesBtn');
+            const clearSalesHistoryBtn = document.getElementById('clearSalesHistoryBtn');
+
+            function renderSalesLog() {
+                if (!salesLogTableBody) return;
+                salesLogTableBody.innerHTML = '';
+                salesHistory.forEach(sale => {
+                    const row = salesLogTableBody.insertRow();
+                    row.insertCell().textContent = sale.date;
+                    row.insertCell().textContent = sale.itemName;
+                    row.insertCell().textContent = sale.quantitySold;
+                    row.insertCell().textContent = `$${sale.unitPrice.toFixed(2)}`;
+                    row.insertCell().textContent = `$${sale.totalSale.toFixed(2)}`;
+                });
+            }
+
+            function generateSalesCSV(period) {
+                if (salesHistory.length === 0) {
+                    alert('No hay ventas registradas para generar un reporte.');
+                    return;
+                }
+
+                let filteredSales = [];
+                const now = new Date();
+                let reportFileName = 'reporte_ventas.csv';
+                let reportTitle = 'Reporte de Ventas';
+                let totalPeriodSales = 0;
+
+                if (period === 'weekly') {
+                    reportTitle = 'Reporte de Ventas Semanal';
+                    reportFileName = 'reporte_ventas_semanal.csv';
+                    const startOfWeek = getMondayOfCurrentWeek(now);
+                    startOfWeek.setHours(0, 0, 0, 0);
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 7);
+                    endOfWeek.setHours(0, 0, 0, 0);
+
+                    filteredSales = salesHistory.filter(sale => {
+                        const saleDate = new Date(sale.date);
+                        saleDate.setHours(0, 0, 0, 0);
+                        return saleDate >= startOfWeek && saleDate < endOfWeek;
+                    });
+                } else if (period === 'monthly') {
+                    reportTitle = 'Reporte de Ventas Mensual';
+                    reportFileName = 'reporte_ventas_mensual.csv';
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    endOfMonth.setHours(23, 59, 59, 999);
+
+                    filteredSales = salesHistory.filter(sale => {
+                        const saleDate = new Date(sale.date);
+                        return saleDate.getFullYear() === now.getFullYear() && saleDate.getMonth() === now.getMonth();
+                    });
+                } else {
+                    alert('Período de reporte no válido.');
+                    return;
+                }
+
+                if (filteredSales.length === 0) {
+                    alert(`No hay ventas para el período ${period === 'weekly' ? 'semanal' : 'mensual'}.`);
+                    return;
+                }
+
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += `${reportTitle}\r\n`;
+                csvContent += "Fecha,Articulo,Cantidad Vendida,Precio Unitario,Total Venta\r\n";
+
+                filteredSales.forEach(sale => {
+                    csvContent += `${sale.date},${sale.itemName},${sale.quantitySold},${sale.unitPrice.toFixed(2)},${sale.totalSale.toFixed(2)}\r\n`;
+                    totalPeriodSales += sale.totalSale;
+                });
+
+                csvContent += `\r\nTotal de Ventas para el Periodo:,$${totalPeriodSales.toFixed(2)}\r\n`;
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                link.setAttribute('download', reportFileName);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            if (downloadSalesLogBtn) {
+                downloadSalesLogBtn.onclick = () => {
+                    if (salesHistory.length === 0) {
+                        alert('No hay historial de ventas para descargar.');
+                        return;
+                    }
+
+                    let csvContent = "data:text/csv;charset=utf-8,";
+                    csvContent += "Fecha,Articulo,Cantidad Vendida,Precio Unitario,Total Venta\r\n";
+                    salesHistory.forEach(sale => {
+                        csvContent += `${sale.date},${sale.itemName},${sale.quantitySold},${sale.unitPrice.toFixed(2)},${sale.totalSale.toFixed(2)}\r\n`;
+                    });
+
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', encodedUri);
+                    link.setAttribute('download', 'historial_ventas.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+
+                downloadWeeklySalesBtn.onclick = () => generateSalesCSV('weekly');
+                downloadMonthlySalesBtn.onclick = () => generateSalesCSV('monthly');
+
+                clearSalesHistoryBtn.onclick = () => {
+                    if (confirm('¿Estás seguro de que quieres borrar todo el historial de ventas? Esta acción no se puede deshacer.')) {
+                        salesHistory = [];
+                        renderSalesLog();
+                        saveToLocalStorage();
+                        alert('El historial de ventas ha sido borrado.');
+                    }
+                };
+                renderSalesLog();
+            }
+
+            // --- Funcionalidad del botón Volver al Inicio ---
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.onscroll = function() {
+                if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                    backToTopBtn.style.display = "block";
+                } else {
+                    backToTopBtn.style.display = "none";
+                }
+            };
+            backToTopBtn.addEventListener('click', () => {
+                document.body.scrollIntoView({ behavior: 'smooth' });
+                document.documentElement.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
