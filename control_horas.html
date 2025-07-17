@@ -42,11 +42,17 @@
                             <th>Fecha</th>
                             <th>Hora Entrada</th>
                             <th>Hora Salida</th>
-                            <th>Duración</th>
+                            <th>Duración (Horas)</th>
                         </tr>
                     </thead>
                     <tbody>
                         </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align: right;"><strong>Total Horas:</strong></td>
+                            <td id="totalHoursDisplay">0.00</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
             <button id="downloadTimeLogBtn" class="btn success">Descargar Registros de Horas</button>
@@ -73,11 +79,13 @@
             }
 
             function formatTime(date) {
-                return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                // Formatting time for Eastern NY (America/New_York) with 12-hour format
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'America/New_York' });
             }
 
             function formatDate(date) {
-                return date.toLocaleDateString('es-ES');
+                // Formatting date for Eastern NY (America/New_York)
+                return date.toLocaleDateString('es-ES', { timeZone: 'America/New_York' });
             }
 
             // --- Control de Horas ---
@@ -87,6 +95,7 @@
             const clockOutBtn = document.getElementById('clockOutBtn');
             const clockStatus = document.getElementById('clockStatus');
             const timeLogTableBody = document.querySelector('#timeLogTable tbody');
+            const totalHoursDisplay = document.getElementById('totalHoursDisplay');
             const downloadTimeLogBtn = document.getElementById('downloadTimeLogBtn');
             const clearTimeLogBtn = document.getElementById('clearTimeLogBtn');
 
@@ -103,6 +112,7 @@
                     clockOutBtn.disabled = true;
                     firstNameInput.disabled = false;
                     lastNameInput.disabled = false;
+                    // Clear the name fields when no one is clocked in, allowing for a new user entry
                     firstNameInput.value = '';
                     lastNameInput.value = '';
                 }
@@ -111,19 +121,27 @@
             function renderTimeLogs() {
                 if (!timeLogTableBody) return;
                 timeLogTableBody.innerHTML = '';
+                let totalHours = 0;
                 timeLogs.forEach(log => {
                     const row = timeLogTableBody.insertRow();
                     row.insertCell().textContent = log.fullName;
                     row.insertCell().textContent = log.date;
                     row.insertCell().textContent = log.clockIn;
                     row.insertCell().textContent = log.clockOut || 'N/A';
-                    row.insertCell().textContent = log.duration || 'N/A';
+                    row.insertCell().textContent = log.duration || 'N/A'; // Already formatted in hours
+                    if (log.durationValue) { // Add durationValue to total if it exists
+                        totalHours += log.durationValue;
+                    }
                 });
+                if (totalHoursDisplay) {
+                    totalHoursDisplay.textContent = totalHours.toFixed(2);
+                }
             }
 
             // Asegurarse de que los elementos existan antes de asignar eventos
             if (clockInBtn) {
-                if (currentUserName) {
+                // When page loads, if a user was clocked in, populate their name
+                if (isClockedIn && currentUserName) {
                     const names = currentUserName.split(' ');
                     firstNameInput.value = names[0] || '';
                     lastNameInput.value = names.slice(1).join(' ') || '';
@@ -154,19 +172,20 @@
                         const now = new Date();
                         const start = new Date(clockInTime);
                         const durationMs = now.getTime() - start.getTime();
-                        const durationMinutes = Math.round(durationMs / (1000 * 60));
+                        const durationHours = (durationMs / (1000 * 60 * 60)).toFixed(2); // Calculate in hours, 2 decimal places
 
                         const newLog = {
                             fullName: currentUserName,
                             date: formatDate(start),
                             clockIn: formatTime(start),
                             clockOut: formatTime(now),
-                            duration: `${durationMinutes} minutos`
+                            duration: `${durationHours} horas`,
+                            durationValue: parseFloat(durationHours) // Store numeric value for totalization
                         };
                         timeLogs.push(newLog);
                         clockInTime = null;
-                        currentUserName = '';
-                        updateClockStatus();
+                        currentUserName = ''; // Clear current user upon clock out to allow new user to clock in
+                        updateClockStatus(); // This will also clear the name fields
                         renderTimeLogs();
                         saveToLocalStorage();
                         alert(`¡${newLog.fullName}, has registrado tu salida! Duración: ${newLog.duration}`);
@@ -180,7 +199,7 @@
                     }
 
                     let csvContent = "data:text/csv;charset=utf-8,";
-                    csvContent += "Nombre Completo,Fecha,Hora Entrada,Hora Salida,Duracion\r\n";
+                    csvContent += "Nombre Completo,Fecha,Hora Entrada,Hora Salida,Duracion (Horas)\r\n";
                     timeLogs.forEach(log => {
                         csvContent += `"${log.fullName}",${log.date},${log.clockIn},${log.clockOut || 'N/A'},${log.duration || 'N/A'}\r\n`;
                     });
@@ -197,6 +216,11 @@
                 clearTimeLogBtn.onclick = () => {
                     if (confirm('¿Estás seguro de que quieres borrar todos los registros de horas? Esta acción no se puede deshacer.')) {
                         timeLogs = [];
+                        // Also clear current clock-in state if any
+                        isClockedIn = false;
+                        clockInTime = null;
+                        currentUserName = '';
+                        updateClockStatus(); // Update UI to reflect cleared state
                         renderTimeLogs();
                         saveToLocalStorage();
                         alert('Los registros de horas han sido borrados.');
